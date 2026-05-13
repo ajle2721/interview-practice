@@ -254,10 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             text: `You are an expert interview coach. I will provide a messy transcript or notes of a behavioral interview answer. 
                             Please structure it into a professional STAR+R framework (Situation, Task, Action, Result, Reflection).
                             
+                            Also, provide a short section at the end called "Coach Feedback" to point out what is missing or how to make the answer more impactful.
+                            
                             IMPORTANT RULES:
                             1. Use the SAME language as the input. If I speak Chinese, output Chinese. If English, output English.
                             2. Keep it concise but impact-oriented.
-                            3. Format with clear headings: Situation, Task, Action, Result, Reflection.
+                            3. Format with clear headings: Situation, Task, Action, Result, Reflection, and Coach Feedback.
                             
                             Input Text:
                             "${text}"`
