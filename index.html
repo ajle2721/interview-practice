@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STAR Interview Practice</title>
+    <meta name="description" content="A simple behavioral interview practice tool for Alice and Jason. Practice STAR framework answers daily.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-content">
+                <h1 id="app-title">Interview Practice</h1>
+                <p class="subtitle">Alice & Jason's Daily Prep</p>
+            </div>
+            <button id="settings-btn" class="icon-btn" title="API Settings">⚙️</button>
+        </header>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Settings</h3>
+                <p>Enter your Gemini API Key to enable AI STAR summarization.</p>
+                <input type="password" id="api-key-input" placeholder="Enter Gemini API Key...">
+                <div class="modal-actions">
+                    <button id="close-settings" class="text-btn">Close</button>
+                    <button id="save-settings" class="success-btn">Save Key</button>
+                </div>
+                <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border);">
+                <h4>Data Management</h4>
+                <p style="font-size: 0.8rem;">Sync history between devices by exporting and importing files.</p>
+                <div class="data-actions">
+                    <button id="export-btn" class="secondary-btn">📤 Export History</button>
+                    <label for="import-input" class="secondary-btn" style="display: inline-block; cursor: pointer; text-align: center;">
+                        📥 Import History
+                        <input type="file" id="import-input" accept=".json" style="display: none;">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <main>
+            <!-- Draw Controls -->
+            <section class="draw-section">
+                <div class="filter-group">
+                    <label for="category-filter">Category:</label>
+                    <select id="category-filter">
+                        <option value="all">All Categories</option>
+                        <option value="Conflict">Conflict</option>
+                        <option value="Leadership">Leadership</option>
+                        <option value="Failure">Failure</option>
+                        <option value="Ambiguity">Ambiguity</option>
+                        <option value="Prioritization">Prioritization</option>
+                        <option value="Cross-functional collaboration">Cross-functional</option>
+                        <option value="Technical challenge">Technical Challenge</option>
+                        <option value="Ownership">Ownership</option>
+                        <option value="Learning / growth">Learning / Growth</option>
+                        <option value="Product decision-making">Product Decision</option>
+                    </select>
+                </div>
+                <button id="draw-btn" class="primary-btn">抽今天的題目</button>
+            </section>
+
+            <!-- Question Card (Hidden initially) -->
+            <section id="question-card" class="question-card hidden">
+                <div class="card-header">
+                    <span id="question-category" class="badge">Category</span>
+                    <button id="redraw-btn" class="text-btn">重新抽一題</button>
+                </div>
+                <h2 id="question-text">Question will appear here...</h2>
+                
+                <div class="star-prompts">
+                    <p><strong>S</strong>ituation • <strong>T</strong>ask • <strong>A</strong>ction • <strong>R</strong>esult • <strong>R</strong>eflection</p>
+                </div>
+
+                <div class="answer-grid">
+                    <div class="answer-box">
+                        <div class="box-header">
+                            <h3>Alice 的回答重點</h3>
+                            <div class="record-controls">
+                                <button class="record-btn" data-user="alice" title="Start Recording">🎤</button>
+                                <button class="ai-btn" data-user="alice" title="AI Summarize">✨ AI STAR</button>
+                            </div>
+                        </div>
+                        <div id="alice-transcript" class="transcript-preview hidden"></div>
+                        <textarea id="alice-answer" placeholder="記下你的 STAR 重點，或點擊麥克風開始錄音..."></textarea>
+                    </div>
+                    <div class="answer-box">
+                        <div class="box-header">
+                            <h3>Jason 的回答重點</h3>
+                            <div class="record-controls">
+                                <button class="record-btn" data-user="jason" title="Start Recording">🎤</button>
+                                <button class="ai-btn" data-user="jason" title="AI Summarize">✨ AI STAR</button>
+                            </div>
+                        </div>
+                        <div id="jason-transcript" class="transcript-preview hidden"></div>
+                        <textarea id="jason-answer" placeholder="記下你的 STAR 重點，或點擊麥克風開始錄音..."></textarea>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="save-btn" class="success-btn">儲存今日紀錄</button>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="history-section">
+                <div class="section-header">
+                    <h2>過去紀錄</h2>
+                    <span id="history-count">0 records</span>
+                </div>
+                <div id="history-list" class="history-list">
+                    <!-- History items will be injected here -->
+                    <div class="empty-state">尚無紀錄</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2026 Alice & Jason • Keep growing!</p>
+        </footer>
+    </div>
+
+    <script src="questions.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
