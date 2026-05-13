@@ -301,14 +301,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
+            
+            if (!response.ok) {
+                const errorMsg = data.error?.message || 'Unknown API error';
+                throw new Error(errorMsg);
+            }
+
             if (data.candidates && data.candidates[0].content.parts[0].text) {
                 textarea.value = data.candidates[0].content.parts[0].text;
             } else {
-                throw new Error('Invalid response from AI');
+                throw new Error('AI 回傳內容格式不正確 (可能是被安全過濾器攔截)');
             }
         } catch (error) {
             console.error('AI Error:', error);
-            alert('AI Summarization failed. Check your API key or connection.');
+            alert(`AI 總結失敗: ${error.message}\n\n請檢查 API Key 是否正確，或稍後再試。`);
         } finally {
             btn.disabled = false;
             btn.textContent = '✨ AI STAR';
