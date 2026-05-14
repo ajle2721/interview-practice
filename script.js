@@ -51,13 +51,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+            let msg = '語音辨識錯誤：' + event.error;
             if (event.error === 'not-allowed') {
-                alert('麥克風權限被拒絕，請在瀏覽器設定中開啟。');
+                msg = '麥克風權限被拒絕。請檢查瀏覽器設定，確保已允許此網頁使用麥克風。';
             } else if (event.error === 'network') {
-                alert('網路連線錯誤，請檢查網路狀態。');
+                msg = '網路連線錯誤，語音辨識需要網路連線。';
+            } else if (event.error === 'no-speech') {
+                msg = '沒聽清楚，請再試一次。';
+                return; // Don't alert for silence
             }
+            alert(msg);
             resetRecordingUI();
         };
+
+        // Check if we are on HTTPS
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            alert('警告：語音辨識在非 HTTPS 連線下可能無法運作。請確保網址以 https:// 開頭。');
+        }
     } else {
         console.warn('Speech recognition not supported in this browser.');
     }
