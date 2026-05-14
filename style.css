@@ -374,17 +374,97 @@ textarea:focus {
     padding: 1.5rem;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
 }
 
 .history-item:hover {
-    transform: scale(1.01);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary);
+}
+
+.history-item.collapsed .history-answers {
+    display: none;
+}
+
+.history-item .toggle-icon {
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+    color: var(--text-muted);
+}
+
+.history-item:not(.collapsed) .toggle-icon {
+    transform: rotate(180deg);
 }
 
 .history-date {
     font-size: 0.85rem;
     color: var(--text-muted);
     margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.h-ans-content {
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+    color: var(--text-main);
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.h-ans-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #eef2ff;
+}
+
+.h-ans-box h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.tab-group {
+    display: flex;
+    gap: 0.3rem;
+    background: #f1f5f9;
+    padding: 0.2rem;
+    border-radius: 6px;
+}
+
+.tab-btn {
+    border: none;
+    background: transparent;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.hidden {
+    display: none !important;
 }
 
 .history-q-text {
@@ -396,20 +476,38 @@ textarea:focus {
 .history-answers {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    padding-top: 1rem;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
     border-top: 1px solid var(--border);
+    animation: slideDown 0.3s ease-out;
 }
 
-.h-ans-box h4 {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-bottom: 0.3rem;
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.h-ans-content {
-    font-size: 0.95rem;
-    white-space: pre-wrap;
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.delete-history-btn {
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.2rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.delete-history-btn:hover {
+    color: #ef4444;
+    background: #fee2e2;
 }
 
 /* Modal */

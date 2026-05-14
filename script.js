@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let recognition = null;
     let isRecording = false;
     let currentRecorder = null; // 'alice' or 'jason'
+    let timerInterval = null;
+    let timerSeconds = 0;
 
     // Initialize Speech Recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -81,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSettings = document.getElementById('close-settings');
     const exportBtn = document.getElementById('export-btn');
     const importInput = document.getElementById('import-input');
+    const timerDisplay = document.getElementById('recording-timer');
 
     // Initialize UI
     renderHistory();
@@ -97,13 +100,52 @@ document.addEventListener('DOMContentLoaded', () => {
     saveSettings.addEventListener('click', () => {
         apiKey = apiKeyInput.value.trim();
         localStorage.setItem('gemini_api_key', apiKey);
+        updateDebugLink();
         settingsModal.classList.add('hidden');
         alert('Settings saved!');
     });
 
+    function updateDebugLink() {
+        const link = document.getElementById('check-models-link');
+        if (apiKey) {
+            link.href = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+            link.style.display = 'inline';
+        } else {
+            link.style.display = 'none';
+        }
+    }
+
+    // Initialize debug link
+    updateDebugLink();
+
     // Data Management
     exportBtn.addEventListener('click', exportHistory);
     importInput.addEventListener('change', importHistory);
+    historyList.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-history-btn');
+        if (deleteBtn) {
+            e.stopPropagation(); // Prevent expanding the card
+            deleteEntry(deleteBtn.dataset.id);
+        }
+    });
+
+    function deleteEntry(id) {
+        if (confirm('確定要刪除這筆紀錄嗎？')) {
+            history = history.filter(item => item.id != id);
+            localStorage.setItem('interview_history', JSON.stringify(history));
+            renderHistory();
+        }
+    }
+
+    function formatMarkdown(text) {
+        if (!text) return '';
+        // Simple markdown parsing for the preview
+        return text
+            .replace(/### (.*)/g, '<h5 style="margin: 1rem 0 0.5rem 0; color: var(--primary);">$1</h5>')
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/- (.*)/g, '<li style="margin-left: 1.2rem;">$1</li>')
+            .replace(/\n/g, '<br>');
+    }
 
     // Recording Controls
     document.querySelectorAll('.record-btn').forEach(btn => {
@@ -155,11 +197,17 @@ document.addEventListener('DOMContentLoaded', () => {
             timestamp: new Date().getTime(),
             question: currentQuestion.question,
             category: currentQuestion.category,
-            alice: aliceAnswer.value.trim(),
-            jason: jasonAnswer.value.trim()
+            alice: {
+                raw: aliceAnswer.dataset.original || aliceAnswer.value.trim(),
+                processed: aliceAnswer.value.trim()
+            },
+            jason: {
+                raw: jasonAnswer.dataset.original || jasonAnswer.value.trim(),
+                processed: jasonAnswer.value.trim()
+            }
         };
 
-        if (!entry.alice && !entry.jason) {
+        if (!entry.alice.processed && !entry.jason.processed) {
             alert('Please enter at least one answer focus.');
             return;
         }
@@ -182,23 +230,63 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        historyList.innerHTML = history.map(item => `
-            <div class="history-item">
-                <div class="history-date">${item.date} • <span class="badge" style="font-size: 0.7rem; padding: 0.2rem 0.6rem;">${item.category}</span></div>
+        historyList.innerHTML = history.map(item => {
+            const aliceData = typeof item.alice === 'object' ? item.alice : { raw: '', processed: item.alice };
+            const jasonData = typeof item.jason === 'object' ? item.jason : { raw: '', processed: item.jason };
+
+            return `
+            <div class="history-item collapsed" onclick="handleItemClick(event, this)">
+                <div class="history-header">
+                    <div class="history-date">
+                        <span>${item.date} • <span class="badge" style="font-size: 0.7rem; padding: 0.2rem 0.6rem;">${item.category}</span></span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <button class="delete-history-btn" data-id="${item.id}" title="Delete Record">🗑️</button>
+                </div>
                 <div class="history-q-text">${item.question}</div>
                 <div class="history-answers">
                     <div class="h-ans-box">
-                        <h4>Alice</h4>
-                        <div class="h-ans-content">${item.alice || '<span style="color: #ccc">N/A</span>'}</div>
+                        <div class="h-ans-header">
+                            <h4>Alice</h4>
+                            <div class="tab-group">
+                                <button class="tab-btn active" onclick="event.stopPropagation(); switchTab(this, 'processed')">✨ AI</button>
+                                <button class="tab-btn" onclick="event.stopPropagation(); switchTab(this, 'raw')">📝 原</button>
+                            </div>
+                        </div>
+                        <div class="h-ans-content processed">${aliceData.processed ? formatMarkdown(aliceData.processed) : '<span style="color: #ccc">N/A</span>'}</div>
+                        <div class="h-ans-content raw hidden">${aliceData.raw ? formatMarkdown(aliceData.raw) : '<span style="color: #ccc">N/A</span>'}</div>
                     </div>
                     <div class="h-ans-box">
-                        <h4>Jason</h4>
-                        <div class="h-ans-content">${item.jason || '<span style="color: #ccc">N/A</span>'}</div>
+                        <div class="h-ans-header">
+                            <h4>Jason</h4>
+                            <div class="tab-group">
+                                <button class="tab-btn active" onclick="event.stopPropagation(); switchTab(this, 'processed')">✨ AI</button>
+                                <button class="tab-btn" onclick="event.stopPropagation(); switchTab(this, 'raw')">📝 原</button>
+                            </div>
+                        </div>
+                        <div class="h-ans-content processed">${jasonData.processed ? formatMarkdown(jasonData.processed) : '<span style="color: #ccc">N/A</span>'}</div>
+                        <div class="h-ans-content raw hidden">${jasonData.raw ? formatMarkdown(jasonData.raw) : '<span style="color: #ccc">N/A</span>'}</div>
                     </div>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
+
+    // Handle item click for expansion, but ignore if clicking buttons
+    window.handleItemClick = (event, el) => {
+        if (event.target.closest('button')) return;
+        el.classList.toggle('collapsed');
+    };
+
+    window.switchTab = (btn, type) => {
+        const box = btn.closest('.h-ans-box');
+        const btns = box.querySelectorAll('.tab-btn');
+        const contents = box.querySelectorAll('.h-ans-content');
+        
+        btns.forEach(b => b.classList.toggle('active', b === btn));
+        contents.forEach(c => c.classList.toggle('hidden', !c.classList.contains(type)));
+    };
 
     // --- Recording & AI Logic ---
 
@@ -218,6 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
             currentRecorder = user;
             isRecording = true;
             
+            // Start Timer
+            startTimer();
+            
             // Update UI for the specific button
             btn.classList.add('recording');
             btn.textContent = '⏹ 停止錄音';
@@ -236,8 +327,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function startTimer() {
+        stopTimer();
+        timerSeconds = 0;
+        updateTimerUI();
+        timerDisplay.classList.remove('hidden');
+        
+        timerInterval = setInterval(() => {
+            timerSeconds++;
+            updateTimerUI();
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        timerDisplay.classList.add('hidden');
+    }
+
+    function updateTimerUI() {
+        const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+        const secs = (timerSeconds % 60).toString().padStart(2, '0');
+        timerDisplay.textContent = `${mins}:${secs}`;
+        
+        // Visual indicators
+        timerDisplay.classList.remove('warning', 'danger');
+        if (timerSeconds >= 180) {
+            timerDisplay.classList.add('danger');
+        } else if (timerSeconds >= 120) {
+            timerDisplay.classList.add('warning');
+        }
+    }
+
     function resetRecordingUI() {
         isRecording = false;
+        stopTimer();
         document.querySelectorAll('.record-btn').forEach(btn => {
             btn.classList.remove('recording');
             btn.textContent = '🎤';
@@ -276,49 +402,95 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
         btn.textContent = '⌛ Summarizing...';
 
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `You are an expert interview coach. I will provide a messy transcript or notes of a behavioral interview answer. 
-                            Please structure it into a professional STAR+R framework (Situation, Task, Action, Result, Reflection).
+        const endpoints = ['v1beta', 'v1'];
+        const models = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+
+        let lastError = null;
+        let success = false;
+
+        outerLoop:
+        for (const v of endpoints) {
+            for (const model of models) {
+                try {
+                    console.log(`Checking: ${v} / ${model}...`);
+                    const url = `https://generativelanguage.googleapis.com/${v}/models/${model}:generateContent?key=${apiKey}`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: `You are a STRICT and professional interview coach.
+                            Question Asked: "${currentQuestion ? currentQuestion.question : 'N/A'}"
                             
-                            Also, provide a short section at the end called "Coach Feedback" to point out what is missing or how to make the answer more impactful.
+                            Input Answer Text:
+                            "${text}"
+                            
+                            YOUR TASKS:
+                            1. STRICT RELEVANCE CHECK: Be very critical. Does the user explain HOW they solved the problem? If they only talk about feelings or high-level philosophy without concrete prioritization methods, give a low relevance score.
+                            2. RATINGS (0-10): Provide scores for:
+                               - 切題度 (Relevance): Does it answer the "how" of the question?
+                               - 具體度 (Specificity): Are there real examples or details?
+                               - 影響力 (Impact): Is there a clear, positive result?
+                            3. COACH'S CRITIQUE: Provide direct, honest feedback on what is missing.
+                            4. SUGGESTED STAR+R REWRITE: 
+                               - Rewrite the answer in a natural, conversational, but professional tone (as if the candidate is speaking).
+                               - Keep it concise and impactful.
                             
                             IMPORTANT RULES:
-                            1. Use the SAME language as the input. If I speak Chinese, output Chinese. If English, output English.
-                            2. Keep it concise but impact-oriented.
-                            3. Format with clear headings: Situation, Task, Action, Result, Reflection, and Coach Feedback.
+                            1. Use the SAME language as the input (Traditional Chinese or English).
+                            2. Use clear Markdown headers.
+                            3. Use the following format:
                             
-                            Input Text:
-                            "${text}"`
-                        }]
-                    }]
-                })
-            });
+                            ### 📊 綜合評分
+                            - 切題度: X/10 (理由)
+                            - 具體度: X/10 (理由)
+                            - 影響力: X/10 (理由)
+                            
+                            ### 💡 教練點評
+                            [指出缺點與改進方向]
+                            
+                            ### ✨ 建議回答 (口語化 STAR+R)
+                            [自然且精簡的回答範例]
+                            
+                            ### 🚀 進階建議
+                            [1-2 個讓回答更強大的技巧]`
 
-            const data = await response.json();
-            
-            if (!response.ok) {
-                const errorMsg = data.error?.message || 'Unknown API error';
-                throw new Error(errorMsg);
-            }
+                                }]
+                            }]
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        const errorDetails = data.error?.message || 'Unknown API error';
+                        console.warn(`${v}/${model} failed:`, errorDetails);
+                        lastError = errorDetails;
+                        continue; 
+                    }
 
             if (data.candidates && data.candidates[0].content.parts[0].text) {
+                // Store original text before replacing
+                textarea.dataset.original = text;
                 textarea.value = data.candidates[0].content.parts[0].text;
-            } else {
-                throw new Error('AI 回傳內容格式不正確 (可能是被安全過濾器攔截)');
+                success = true;
+                        console.log(`Success! Using: ${v} / ${model}`);
+                        break outerLoop;
+                    }
+                } catch (error) {
+                    console.error(`Network or fetch error for ${v}/${model}:`, error);
+                    lastError = error.message;
+                }
             }
-        } catch (error) {
-            console.error('AI Error:', error);
-            alert(`AI 總結失敗: ${error.message}\n\n請檢查 API Key 是否正確，或稍後再試。`);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '✨ AI STAR';
         }
+
+        if (!success) {
+            alert(`AI 總結失敗。最後一次錯誤：${lastError}\n\n這通常代表您的 API Key 尚未啟動或模型在您的區域暫時不可用。`);
+        }
+        
+        btn.disabled = false;
+        btn.textContent = '✨ AI STAR';
     }
 
     function exportHistory() {
