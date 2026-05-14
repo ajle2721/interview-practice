@@ -302,12 +302,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function toggleRecording(user, btn) {
         if (!recognition) {
-            alert('Your browser does not support Speech Recognition.');
+            alert('您的瀏覽器不支援語音辨識。請嘗試使用 Chrome 或 Safari。');
             return;
         }
 
         if (isRecording) {
-            recognition.stop();
+            try {
+                recognition.stop();
+            } catch (err) {
+                console.error('Stop recognition error:', err);
+                resetRecordingUI();
+            }
             return;
         }
 
@@ -316,23 +321,26 @@ document.addEventListener('DOMContentLoaded', () => {
             currentRecorder = user;
             isRecording = true;
             
-            // Start Timer
-            startTimer();
-            
-            // Update UI for the specific button
+            // 1. Immediate UI Feedback
             btn.classList.add('recording');
             btn.textContent = '⏹ 停止錄音';
             
             const preview = document.getElementById(`${user}-transcript`);
             if (preview) {
                 preview.classList.remove('hidden');
-                preview.textContent = 'Listening...';
+                preview.textContent = '正在聽取中 (Listening)...';
             }
 
+            // 2. Start Timer
+            startTimer();
+            
+            // 3. Start Recognition
             recognition.lang = detectLanguagePreference();
             recognition.start();
         } catch (err) {
-            console.error('Failed to start recognition:', err);
+            console.error('Failed to start recording:', err);
+            // If it fails to start, reset everything
+            alert('錄音啟動失敗，請確保已授權麥克風權限。');
             resetRecordingUI();
         }
     }
@@ -341,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         stopTimer();
         timerSeconds = 0;
         updateTimerUI();
-        timerDisplay.classList.remove('hidden');
+        if (timerDisplay) timerDisplay.classList.remove('hidden');
         
         timerInterval = setInterval(() => {
             timerSeconds++;
@@ -354,10 +362,13 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(timerInterval);
             timerInterval = null;
         }
-        timerDisplay.classList.add('hidden');
+        if (timerDisplay) {
+            timerDisplay.classList.add('hidden');
+        }
     }
 
     function updateTimerUI() {
+        if (!timerDisplay) return;
         const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
         const secs = (timerSeconds % 60).toString().padStart(2, '0');
         timerDisplay.textContent = `${mins}:${secs}`;
@@ -379,9 +390,9 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = '🎤';
         });
         
-        // Hide previews if they are just "Listening..."
+        // Hide previews if they are just "Listening..." or equivalent
         document.querySelectorAll('.transcript-preview').forEach(p => {
-            if (p.textContent === 'Listening...' || !p.textContent) {
+            if (p.textContent.includes('Listening') || p.textContent.includes('聽取中') || !p.textContent) {
                 p.classList.add('hidden');
             }
         });

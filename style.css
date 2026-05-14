@@ -204,6 +204,34 @@ select {
     margin-bottom: 1.5rem;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.recording-timer {
+    font-family: 'Outfit', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #ef4444;
+    background: #fee2e2;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    animation: pulse 1s infinite;
+}
+
+.recording-timer.warning {
+    color: #f59e0b;
+    background: #fef3c7;
+}
+
+.recording-timer.danger {
+    color: #b91c1c;
+    background: #fee2e2;
+    animation: pulse 0.5s infinite;
+}
+
 .badge {
     background: #eef2ff;
     color: var(--primary);
